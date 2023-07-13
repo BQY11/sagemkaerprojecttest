@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+    commands:
+      - mkdir -p ~/.pip
+      - echo "[global]" | tee -a ~/.pip/pip.conf
+      - echo "index-url = https://artifactory2.westpac.co.nz/api/pypi/pypi-virtual/simple" | tee -a ~/.pip/pip.conf
+      - echo "trusted-host = artifactory2.westpac.co.nz" | tee -a ~/.pip/pip.conf
+      - pip install --upgrade --force-reinstall . "awscli>1.20.30"
+########################
+# TODO: The job prefix and tags for all generated resources can be customized here
+########################
+  build:
+    commands:
+      - export PYTHONUNBUFFERED=TRUE
+      - export SAGEMAKER_JOB_PREFIX=german-credit
+      - |
+        run-pipeline --module-name pipelines.model.pipeline \
+          --role-arn $SAGEMAKER_PIPELINE_ROLE_ARN \
+          --tags "[{\"Key\":\"sagemaker:project-name\", \"Value\":\"German Credit Model Project\"}, {\"Key\":\"sagemaker:extra-key\", \"Value\":\"Extra Value\"}]" \
+          --kwargs "{\"region\":\"${AWS_REGION}\",\"role\":\"${SAGEMAKER_PIPELINE_ROLE_ARN}\",\"default_bucket\":\"${ARTIFACT_BUCKET}\",\"pipeline_name\":\"${SAGEMAKER_PIPELINE_NAME}\",\"model_package_group_name\":\"${SAGEMAKER_MODEL_GROUP_NAME}\",\"base_job_prefix\":\"${SAGEMAKER_JOB_PREFIX}\",\"kms_key_id\":\"${KMS_KEY_ID}\"}"
+      - echo "Create/Update of the SageMaker Pipeline and execution completed."
+
